@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class SnowPathDrawer : MonoBehaviour
@@ -16,26 +18,37 @@ public class SnowPathDrawer : MonoBehaviour
 
     private Vector2Int position = new Vector2Int(256, 256);
     public float spotSize = 5f;
+    public float drawDistance = 50f;
 
     private SnowController snowController;
-    private GameObject[] snowControllerObjs;
+    private List<SnowController> snowControllers = new List<SnowController>();
 
-    private void Awake()
+    /*private void Awake()
     {
         snowControllerObjs = GameObject.FindGameObjectsWithTag("SnowGround");
-    }
+    }*/
 
     private void FixedUpdate()
     {
-        for(int i = 0; i < snowControllerObjs.Length; i++)
+        if (Vector3.Distance(Camera.main.transform.position, transform.position) > drawDistance) return;
+
+        for(int i = 0; i < snowControllers.Count; i++)
         {
-            if (Vector3.Distance(snowControllerObjs[i].transform.position, transform.position) > spotSize * 5f) continue;
+            snowController = snowControllers[i];
+            snowRT = snowController.snowRT;
+            GetPosition();
+            DrawSpot();
+        }
+
+        /*for(int i = 0; i < snowControllerObjs.Length; i++)
+        {
+            if (Vector3.Distance(snowControllerObjs[i].transform.position, transform.position) > spotSize * 2f) continue;
 
             snowController = snowControllerObjs[i].GetComponent<SnowController>();
             snowRT = snowController.snowRT;
             GetPosition();
             DrawSpot();
-        }
+        }*/
     }
 
     void GetPosition()
@@ -64,5 +77,25 @@ public class SnowPathDrawer : MonoBehaviour
         snowComputeShader.SetFloat(positionYProperty, position.y);
         snowComputeShader.SetFloat(spotSizeProperty, spotSize);
         snowComputeShader.Dispatch(kernel_handle, snowRT.width / 8, snowRT.height / 8, 1);
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("SnowGround"))
+        {
+            snowControllers.Add(other.GetComponent<SnowController>());
+            //snowController = other.GetComponent<SnowController>();
+            //snowRT = snowController.snowRT;
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("SnowGround"))
+        {
+            snowControllers.Remove(other.GetComponent<SnowController>());
+            //snowController = other.GetComponent<SnowController>();
+            //snowRT = snowController.snowRT;
+        }
     }
 }
